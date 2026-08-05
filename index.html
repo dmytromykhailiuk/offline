@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>offline — documentation</title>
+    <meta
+      name="description"
+      content="Full offline mode for SPAs: a post-build service worker generator and a promise-based offline-readiness tracker. Complete API reference."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235B4BD6'/%3E%3Cpath d='M16 6v11M10.5 12.5 16 18l5.5-5.5' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 24h14' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <style>
+      /* ── tokens ──────────────────────────────────────────────────────── */
+      :root {
+        --ground: #fbfbfd;
+        --surface: #ffffff;
+        --surface-2: #f3f4f8;
+        --code-bg: #f7f7fb;
+        --ink: #14161c;
+        --ink-2: #3a3f4c;
+        --muted: #6b7181;
+        --line: #e3e5ec;
+        --line-2: #edeff4;
+        --accent: #5b4bd6;
+        --accent-2: #4436b8;
+        --accent-soft: #efecfd;
+        --wire: #0e7c7b;
+        --warn: #8a5200;
+        --warn-soft: #fcf3e5;
+        --warn-line: #e8cda0;
+        --danger: #b42318;
+        --danger-soft: #fdf1f0;
+        --danger-line: #f0c8c4;
+        --tok-str: #0e7c7b;
+        --tok-kw: #7a3ea8;
+        --tok-com: #8a90a0;
+        --tok-num: #a34a00;
+        --tok-key: #2b5fcf;
+        --shadow: 0 1px 2px rgba(20, 22, 28, 0.05),
+          0 8px 24px -12px rgba(20, 22, 28, 0.14);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ground: #0e1014;
+          --surface: #14171d;
+          --surface-2: #191d25;
+          --code-bg: #12151b;
+          --ink: #e9ebf1;
+          --ink-2: #c3c9d6;
+          --muted: #8b93a6;
+          --line: #262b35;
+          --line-2: #1e222b;
+          --accent: #a99bff;
+          --accent-2: #c3b8ff;
+          --accent-soft: #1e1b33;
+          --wire: #4fd1c5;
+          --warn: #e2a85c;
+          --warn-soft: #241c10;
+          --warn-line: #4a3a1e;
+          --danger: #ff9086;
+          --danger-soft: #251413;
+          --danger-line: #4c2622;
+          --tok-str: #5fd3c6;
+          --tok-kw: #c79bf0;
+          --tok-com: #6e7688;
+          --tok-num: #e0a162;
+          --tok-key: #8ab4ff;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4),
+            0 8px 24px -12px rgba(0, 0, 0, 0.6);
+        }
+      }
+      :root[data-theme="dark"] {
+        --ground: #0e1014;
+        --surface: #14171d;
+        --surface-2: #191d25;
+        --code-bg: #12151b;
+        --ink: #e9ebf1;
+        --ink-2: #c3c9d6;
+        --muted: #8b93a6;
+        --line: #262b35;
+        --line-2: #1e222b;
+        --accent: #a99bff;
+        --accent-2: #c3b8ff;
+        --accent-soft: #1e1b33;
+        --wire: #4fd1c5;
+        --warn: #e2a85c;
+        --warn-soft: #241c10;
+        --warn-line: #4a3a1e;
+        --danger: #ff9086;
+        --danger-soft: #251413;
+        --danger-line: #4c2622;
+        --tok-str: #5fd3c6;
+        --tok-kw: #c79bf0;
+        --tok-com: #6e7688;
+        --tok-num: #e0a162;
+        --tok-key: #8ab4ff;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4),
+          0 8px 24px -12px rgba(0, 0, 0, 0.6);
+      }
+      :root[data-theme="light"] {
+        --ground: #fbfbfd;
+        --surface: #ffffff;
+        --surface-2: #f3f4f8;
+        --code-bg: #f7f7fb;
+        --ink: #14161c;
+        --ink-2: #3a3f4c;
+        --muted: #6b7181;
+        --line: #e3e5ec;
+        --line-2: #edeff4;
+        --accent: #5b4bd6;
+        --accent-2: #4436b8;
+        --accent-soft: #efecfd;
+        --wire: #0e7c7b;
+        --warn: #8a5200;
+        --warn-soft: #fcf3e5;
+        --warn-line: #e8cda0;
+        --danger: #b42318;
+        --danger-soft: #fdf1f0;
+        --danger-line: #f0c8c4;
+        --tok-str: #0e7c7b;
+        --tok-kw: #7a3ea8;
+        --tok-com: #8a90a0;
+        --tok-num: #a34a00;
+        --tok-key: #2b5fcf;
+        --shadow: 0 1px 2px rgba(20, 22, 28, 0.05),
+          0 8px 24px -12px rgba(20, 22, 28, 0.14);
+      }
+
+      /* ── base ────────────────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+        scroll-behavior: smooth;
+        scroll-padding-top: 1.5rem;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── shell ───────────────────────────────────────────────────────── */
+      .shell {
+        display: grid;
+        grid-template-columns: 17rem minmax(0, 1fr);
+        gap: 3.5rem;
+        max-width: 78rem;
+        margin: 0 auto;
+        padding: 0 1.75rem;
+      }
+      @media (max-width: 62rem) {
+        .shell {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+        }
+      }
+
+      /* ── sidebar ─────────────────────────────────────────────────────── */
+      .rail {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        max-height: 100vh;
+        overflow-y: auto;
+        padding: 2.25rem 0 3rem;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        margin-bottom: 0.35rem;
+      }
+      .brand-mark {
+        font: 600 0.95rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        color: var(--accent);
+        letter-spacing: -0.01em;
+      }
+      .brand-ver {
+        font: 500 0.7rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        color: var(--muted);
+        padding: 0.15rem 0.35rem;
+        border: 1px solid var(--line);
+        border-radius: 0.3rem;
+      }
+      .brand-sub {
+        margin: 0 0 1.5rem;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .toc-title {
+        font: 600 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        margin: 0 0 0.7rem;
+      }
+      nav.toc ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.05rem;
+      }
+      nav.toc > ol > li > a {
+        font-weight: 550;
+      }
+      nav.toc a {
+        display: block;
+        padding: 0.27rem 0.6rem;
+        border-left: 2px solid var(--line-2);
+        color: var(--ink-2);
+        text-decoration: none;
+        font-size: 0.855rem;
+        line-height: 1.35;
+        transition: color 0.12s, border-color 0.12s, background 0.12s;
+      }
+      nav.toc a:hover {
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-left-color: var(--accent);
+      }
+      nav.toc a.is-active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+        font-weight: 600;
+      }
+      nav.toc a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+        border-radius: 0.2rem;
+      }
+      nav.toc ol ol a {
+        padding-left: 1.35rem;
+        font-size: 0.81rem;
+        color: var(--muted);
+      }
+      .rail-foot {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      /* theme toggle: fixed at the top of the screen, icon only */
+      .theme-toggle {
+        position: fixed;
+        top: 0.9rem;
+        right: 0.9rem;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        width: 2.35rem;
+        height: 2.35rem;
+        padding: 0;
+        color: var(--ink-2);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: color 0.12s, border-color 0.12s, background 0.12s;
+      }
+      .theme-toggle:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .theme-toggle:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .theme-toggle .icon {
+        width: 1.15rem;
+        height: 1.15rem;
+        /* both icons share one grid cell, so swapping never shifts anything */
+        grid-area: 1 / 1;
+      }
+
+      /* Which icon shows is derived from the same signals that drive the
+         palette, so it stays correct with or without an explicit override. */
+      .icon-sun {
+        display: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) .icon-moon {
+          display: none;
+        }
+        :root:not([data-theme]) .icon-sun {
+          display: block;
+        }
+      }
+      :root[data-theme="dark"] .icon-moon {
+        display: none;
+      }
+      :root[data-theme="dark"] .icon-sun {
+        display: block;
+      }
+      :root[data-theme="light"] .icon-moon {
+        display: block;
+      }
+      :root[data-theme="light"] .icon-sun {
+        display: none;
+      }
+
+      /* ── mobile top bar: hamburger (left) + theme toggle (right) ──────── */
+      /* Hidden on desktop; the whole apparatus only appears below 62rem.    */
+      .mobile-bar {
+        display: none;
+      }
+      .nav-toggle {
+        display: grid;
+        place-items: center;
+        width: 2.35rem;
+        height: 2.35rem;
+        padding: 0;
+        color: var(--ink-2);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 0.6rem;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: color 0.12s, border-color 0.12s, background 0.12s;
+      }
+      .nav-toggle:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .nav-toggle:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .nav-toggle .icon {
+        width: 1.3rem;
+        height: 1.3rem;
+        grid-area: 1 / 1; /* both icons share one cell, so swapping never shifts */
+      }
+      .nav-toggle .icon-close {
+        display: none;
+      }
+      .nav-scrim {
+        display: none;
+      }
+
+      @media (max-width: 62rem) {
+        /* the bar itself */
+        .mobile-bar {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3.4rem;
+          padding: 0 0.9rem;
+          background: var(--surface);
+          border-bottom: 1px solid var(--line);
+          box-shadow: var(--shadow);
+          z-index: 40;
+        }
+        .mobile-bar .bar-brand {
+          font: 600 0.95rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+            monospace;
+          color: var(--accent);
+          letter-spacing: -0.01em;
+        }
+        /* the existing theme toggle rides on the right end of the bar */
+        .theme-toggle {
+          top: 0.525rem;
+          right: 0.9rem;
+          border-radius: 0.6rem;
+          z-index: 41;
+        }
+        /* make room for the fixed bar and keep anchors clear of it */
+        body {
+          padding-top: 3.4rem;
+        }
+        html {
+          scroll-padding-top: 4.4rem;
+        }
+
+        /* hamburger flips to a close icon while the drawer is open */
+        body.nav-open .nav-toggle .icon-menu {
+          display: none;
+        }
+        body.nav-open .nav-toggle .icon-close {
+          display: block;
+        }
+
+        /* dimmed backdrop behind the drawer */
+        .nav-scrim {
+          display: block;
+          position: fixed;
+          inset: 3.4rem 0 0;
+          background: rgba(8, 9, 12, 0.42);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.18s, visibility 0.18s;
+          z-index: 35;
+        }
+        body.nav-open .nav-scrim {
+          opacity: 1;
+          visibility: visible;
+        }
+
+        /* the sidebar becomes a drawer that drops down from the bar */
+        .rail {
+          position: fixed;
+          top: 3.4rem;
+          left: 0;
+          right: 0;
+          max-height: calc(100dvh - 3.4rem);
+          overflow-y: auto;
+          padding: 1.4rem 1.6rem 2rem;
+          background: var(--ground);
+          border-bottom: 1px solid var(--line);
+          box-shadow: var(--shadow);
+          z-index: 36;
+          transform: translateY(-0.5rem);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
+        }
+        body.nav-open .rail {
+          transform: none;
+          opacity: 1;
+          visibility: visible;
+        }
+
+        /* inside the drawer the TOC is always expanded — no inner collapse */
+        .toc-shell {
+          border: 0;
+          background: none;
+          padding: 0;
+          margin: 0;
+        }
+        .toc-shell > summary {
+          display: none;
+        }
+      }
+      @media (min-width: 62.001rem) {
+        .toc-shell > summary {
+          display: none;
+        }
+      }
+
+      /* ── content ─────────────────────────────────────────────────────── */
+      main {
+        padding: 2.25rem 0 6rem;
+        min-width: 0;
+      }
+      .lede {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 2.25rem;
+        margin-bottom: 2.5rem;
+      }
+      h1 {
+        font-family: ui-serif, Georgia, "Iowan Old Style", "Palatino Linotype",
+          Palatino, serif;
+        font-size: clamp(2.1rem, 1.4rem + 2.6vw, 3.1rem);
+        line-height: 1.06;
+        letter-spacing: -0.022em;
+        font-weight: 600;
+        margin: 0 0 0.7rem;
+        text-wrap: balance;
+      }
+      .lede p {
+        font-size: 1.08rem;
+        color: var(--ink-2);
+        margin: 0 0 1rem;
+        max-width: 62ch;
+      }
+      .lede p:last-child {
+        margin-bottom: 0;
+      }
+      .pitch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 1.25rem;
+      }
+      .pitch span {
+        font: 500 0.74rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        color: var(--wire);
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 2rem;
+        padding: 0.38rem 0.7rem;
+      }
+
+      section {
+        scroll-margin-top: 1.5rem;
+        padding-top: 2.75rem;
+      }
+      section + section {
+        border-top: 1px solid var(--line-2);
+      }
+      h2 {
+        font-family: ui-serif, Georgia, "Iowan Old Style", Palatino, serif;
+        font-size: 1.85rem;
+        line-height: 1.15;
+        letter-spacing: -0.017em;
+        font-weight: 600;
+        margin: 0 0 0.35rem;
+        text-wrap: balance;
+      }
+      h3 {
+        font-size: 1.12rem;
+        font-weight: 650;
+        letter-spacing: -0.006em;
+        margin: 2.25rem 0 0.6rem;
+        text-wrap: balance;
+      }
+      h4 {
+        font: 600 0.72rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: var(--muted);
+        margin: 1.75rem 0 0.55rem;
+      }
+      .eyebrow {
+        font: 600 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.11em;
+        color: var(--accent);
+        margin: 0 0 0.55rem;
+      }
+      p {
+        margin: 0 0 1rem;
+        max-width: 68ch;
+      }
+      li > p {
+        margin-bottom: 0.4rem;
+      }
+      a {
+        color: var(--accent);
+        text-underline-offset: 0.17em;
+        text-decoration-thickness: 0.06em;
+      }
+      a:hover {
+        color: var(--accent-2);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 0.15rem;
+      }
+      ul,
+      ol {
+        margin: 0 0 1rem;
+        padding-left: 1.25rem;
+        max-width: 68ch;
+      }
+      li {
+        margin-bottom: 0.35rem;
+      }
+      li::marker {
+        color: var(--muted);
+      }
+      strong {
+        font-weight: 640;
+      }
+      hr {
+        border: 0;
+        border-top: 1px solid var(--line-2);
+        margin: 2rem 0;
+      }
+
+      /* inline code */
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
+        font-size: 0.875em;
+      }
+      p > code,
+      li > code,
+      td > code,
+      th > code,
+      h3 > code,
+      h2 > code,
+      summary > code,
+      dt > code {
+        background: var(--surface-2);
+        border: 1px solid var(--line-2);
+        border-radius: 0.3rem;
+        padding: 0.08em 0.34em;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      /* On a phone a long inline token like
+         `{ provide, useValue | useExisting, … }` is wider than the screen and,
+         kept on one line, pushes the whole page sideways (content gets clipped).
+         Below 62rem let these wrap; desktop keeps them on a single line. */
+      @media (max-width: 62rem) {
+        p > code,
+        li > code,
+        h3 > code,
+        h2 > code,
+        dt > code {
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+      }
+
+      /* code blocks */
+      .snippet {
+        margin: 0 0 1.25rem;
+        border: 1px solid var(--line);
+        border-radius: 0.6rem;
+        background: var(--code-bg);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+      .snippet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.45rem 0.8rem;
+        border-bottom: 1px solid var(--line-2);
+        background: var(--surface);
+      }
+      .snippet-lang {
+        font: 600 0.66rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: var(--muted);
+      }
+      .snippet-note {
+        font: 500 0.72rem/1.3 system-ui, sans-serif;
+        color: var(--muted);
+        text-align: right;
+      }
+      .snippet pre {
+        margin: 0;
+        padding: 0.95rem 1rem;
+        overflow-x: auto;
+        font-size: 0.845rem;
+        line-height: 1.62;
+      }
+      .snippet code {
+        color: var(--ink);
+        white-space: pre;
+      }
+      .tok-str {
+        color: var(--tok-str);
+      }
+      .tok-kw {
+        color: var(--tok-kw);
+      }
+      .tok-com {
+        color: var(--tok-com);
+        font-style: italic;
+      }
+      .tok-num {
+        color: var(--tok-num);
+      }
+      .tok-key {
+        color: var(--tok-key);
+      }
+
+      /* callouts */
+      .note {
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        background: var(--surface);
+        border-radius: 0.5rem;
+        padding: 0.9rem 1.1rem;
+        margin: 0 0 1.25rem;
+      }
+      .note > :last-child {
+        margin-bottom: 0;
+      }
+      .note-label {
+        font: 600 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: var(--accent);
+        display: block;
+        margin-bottom: 0.4rem;
+      }
+      .note.warn {
+        border-left-color: var(--warn);
+        background: var(--warn-soft);
+        border-color: var(--warn-line);
+      }
+      .note.warn .note-label {
+        color: var(--warn);
+      }
+      .note.danger {
+        border-left-color: var(--danger);
+        background: var(--danger-soft);
+        border-color: var(--danger-line);
+      }
+      .note.danger .note-label {
+        color: var(--danger);
+      }
+
+      /* tables */
+      .table-wrap {
+        overflow-x: auto;
+        margin: 0 0 1.25rem;
+        border: 1px solid var(--line);
+        border-radius: 0.6rem;
+        background: var(--surface);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.875rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 0.6rem 0.85rem;
+        border-bottom: 1px solid var(--line-2);
+        vertical-align: top;
+      }
+      thead th {
+        font: 600 0.68rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--muted);
+        background: var(--surface-2);
+        white-space: nowrap;
+      }
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+      td code {
+        white-space: nowrap;
+      }
+      td:first-child {
+        white-space: nowrap;
+      }
+
+      /* definition rows for option reference */
+      .opts {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid var(--line);
+        border-radius: 0.6rem;
+        overflow: hidden;
+        margin: 0 0 1.25rem;
+        background: var(--surface);
+      }
+      .opt {
+        display: grid;
+        grid-template-columns: 13rem minmax(0, 1fr);
+        gap: 1.25rem;
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .opt:last-child {
+        border-bottom: 0;
+      }
+      @media (max-width: 46rem) {
+        .opt {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0.25rem;
+        }
+      }
+      .opt-name {
+        font: 600 0.82rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        color: var(--accent);
+        word-break: break-word;
+      }
+      .opt-type {
+        display: block;
+        font: 400 0.74rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        color: var(--muted);
+        margin-top: 0.15rem;
+        white-space: normal;
+      }
+      .opt-body {
+        font-size: 0.9rem;
+        color: var(--ink-2);
+      }
+      .opt-body > :last-child {
+        margin-bottom: 0;
+      }
+      .opt-body p {
+        margin-bottom: 0.5rem;
+        max-width: none;
+      }
+
+      .anchor {
+        color: var(--muted);
+        text-decoration: none;
+        opacity: 0;
+        margin-left: 0.4rem;
+        font-weight: 400;
+      }
+      h2:hover .anchor,
+      h3:hover .anchor,
+      .anchor:focus-visible {
+        opacity: 1;
+      }
+
+      footer {
+        border-top: 1px solid var(--line);
+        margin-top: 4rem;
+        padding-top: 1.5rem;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="mobile-bar">
+      <button class="nav-toggle" type="button" id="nav-toggle" aria-label="Open navigation" aria-controls="site-rail" aria-expanded="false">
+        <svg class="icon icon-menu" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <svg class="icon icon-close" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
+      <span class="bar-brand">offline</span>
+    </header>
+    <div class="nav-scrim" id="nav-scrim"></div>
+
+    <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch theme">
+      <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+      </svg>
+      <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8" />
+        <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2" />
+          <path d="M5.9 5.9 4.4 4.4M19.6 19.6l-1.5-1.5M18.1 5.9l1.5-1.5M4.4 19.6l1.5-1.5" />
+        </g>
+      </svg>
+    </button>
+
+    <div class="shell">
+      <div class="rail" id="site-rail">
+        <div class="brand">
+          <span class="brand-mark">offline</span>
+          <span class="brand-ver">1.0.0</span>
+        </div>
+        <p class="brand-sub">
+          Full offline mode for SPAs. One post-build command, one tracker, plain promises.
+        </p>
+
+        <details class="toc-shell" open>
+          <summary>Contents</summary>
+          <p class="toc-title">Contents</p>
+          <nav class="toc" aria-label="Table of contents">
+            <ol>
+              <li><a href="#install">Install</a></li>
+              <li><a href="#quick-start">Quick start</a></li>
+              <li><a href="#how-it-works">How it works</a></li>
+              <li>
+                <a href="#offline-json">offline.json</a>
+                <ol>
+                  <li><a href="#config-reference">Every field</a></li>
+                  <li><a href="#data-groups">dataGroups</a></li>
+                  <li><a href="#manifest">The generated manifest</a></li>
+                </ol>
+              </li>
+              <li><a href="#cli">The CLI</a></li>
+              <li><a href="#service-worker">The service worker</a></li>
+              <li><a href="#bootstrap">The bootstrap script</a></li>
+              <li>
+                <a href="#tracker">OfflineTracker</a>
+                <ol>
+                  <li><a href="#api-init">init</a></li>
+                  <li><a href="#api-reinit">reInit</a></li>
+                  <li><a href="#api-register">registerServiceWorker</a></li>
+                  <li><a href="#api-status">status &amp; isOfflineReady</a></li>
+                  <li><a href="#api-subscribe">subscribe</a></li>
+                  <li><a href="#api-when-ready">whenOfflineReady</a></li>
+                  <li><a href="#api-stabilize">stabilizeCaching</a></li>
+                  <li><a href="#api-destroy">destroy</a></li>
+                </ol>
+              </li>
+              <li><a href="#recipes">Recipes</a></li>
+              <li><a href="#typescript">TypeScript</a></li>
+            </ol>
+          </nav>
+        </details>
+      </div>
+
+      <main>
+        <header class="lede">
+          <h1>offline</h1>
+          <p>
+            Everything a SPA needs to work fully offline — split into the two
+            places the work actually happens.
+          </p>
+          <p>
+            At <strong>build time</strong>, the <code>offline-postbuild</code> CLI
+            reads <code>offline.json</code>, collects your build's files, generates
+            a service worker (<code>sw-min.js</code>) with a precache manifest
+            (<code>critical-assets.json</code>) and injects a small bootstrap script
+            into <code>index.html</code>. At <strong>runtime</strong>, the
+            <code>OfflineTracker</code> class registers that worker, warms the cache
+            and answers one question precisely: <em>is this app ready to work
+            offline?</em> — as a boolean, a subscription and a promise. No rxjs, no
+            signals — plain TypeScript and promises.
+          </p>
+          <div class="pitch">
+            <span>installable PWA</span>
+            <span>one postbuild command</span>
+            <span>generated service worker</span>
+            <span>offline-ready tracking</span>
+            <span>static-only API</span>
+            <span>promise-based</span>
+            <span>verified network state</span>
+            <span>SSR-safe</span>
+            <span>typed end to end</span>
+          </div>
+        </header>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="install">
+          <p class="eyebrow">Getting started</p>
+          <h2>
+            Install<a
+              class="anchor"
+              href="#install"
+              aria-label="Link to Install"
+              >#</a
+            >
+          </h2>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">sh</span></div>
+            <pre><code data-lang="sh">npm i @dmytromykhailiuk/offline @dmytromykhailiuk/network-connection</code></pre>
+          </div>
+          <div class="note">
+            <span class="note-label">Hard precondition</span>
+            <p>
+              <code>OfflineTracker</code> consumes
+              <code>@dmytromykhailiuk/network-connection</code> for every
+              online/offline decision and <strong>never initializes it on its
+              own</strong> — the app owns that singleton.
+              <code>OfflineTracker.init()</code> throws immediately when
+              <code>NetworkConnection.init()</code> has not been called first.
+            </p>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="quick-start">
+          <h2>
+            Quick start<a
+              class="anchor"
+              href="#quick-start"
+              aria-label="Link to Quick start"
+              >#</a
+            >
+          </h2>
+          <p>
+            Three pieces: a config file next to your project, one script in the
+            build pipeline, a few lines at app startup.
+          </p>
+          <p><strong>1.</strong> Describe the offline layer in <code>offline.json</code>:</p>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">json</span></div>
+            <pre><code data-lang="json">{
+  "name": "Client",
+  "buildPath": "/dist",
+  "themeColor": "#1c1c1c",
+  "icons": [
+    { "src": "icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }
+  ],
+  "criticalAssets": ["**.js", "**.css", "**.svg", "/images/logo.png"],
+  "lazyLoadAssets": ["/images/*.jpg"],
+  "dataGroups": [
+    { "name": "translations", "urls": ["/translations/"], "maxSize": 1 }
+  ]
+}</code></pre>
+          </div>
+          <p><strong>2.</strong> Run the CLI after every build:</p>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">json</span></div>
+            <pre><code data-lang="json">{
+  "scripts": {
+    "postbuild": "offline-postbuild"
+  }
+}</code></pre>
+          </div>
+          <p>
+            <strong>3.</strong> Wire the runtime at startup — here with a
+            blocking screen while the connection is down and the app is not
+            yet ready to work offline:
+          </p>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">import { NetworkConnection } from "@dmytromykhailiuk/network-connection";
+import { OfflineTracker } from "@dmytromykhailiuk/offline";
+
+await NetworkConnection.init("/health.txt");
+
+OfflineTracker.init({ disabled: import.meta.env.DEV });
+OfflineTracker.registerServiceWorker();
+
+const networkUnsubscribeFn = NetworkConnection.subscribe((isOnline) =&gt; {
+  if (!isOnline &amp;&amp; !OfflineTracker.isOfflineReady &amp;&amp; !NetworkBlockingScreen.isVisible()) {
+    NetworkBlockingScreen.show();
+  }
+
+  if (isOnline &amp;&amp; NetworkBlockingScreen.isVisible()) {
+    NetworkBlockingScreen.hide();
+  }
+});
+
+OfflineTracker.whenOfflineReady().then(() =&gt; networkUnsubscribeFn());</code></pre>
+          </div>
+          <div class="note">
+            <span class="note-label">Readiness is asynchronous</span>
+            <p>
+              <code>init()</code> only kicks the process off. A repeat visit —
+              online or offline — initializes from the cached
+              <code>critical-assets.json</code> (a client-side cache-first
+              bucket via <code>@dmytromykhailiuk/cache-request</code>,
+              invalidated by the bootstrap's new-build cache wipe); only on a
+              first-ever offline visit is there nothing to fall back on, so
+              the cache warms up once the connection appears. Follow the
+              progress through <code>subscribe()</code>,
+              <code>whenOfflineReady()</code> and <code>isOfflineReady</code>.
+            </p>
+          </div>
+          <div class="note">
+            <span class="note-label">Dev is not this library's mode</span>
+            <p>
+              The worker and the manifest exist only after
+              <code>offline-postbuild</code> runs over a real build. In dev,
+              initialize with <code>disabled: true</code> — the tracker stays
+              readable but inert: no requests, no listeners, no registration,
+              and <code>isOfflineReady</code> stays <code>false</code>.
+            </p>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="how-it-works">
+          <h2>
+            How it works<a
+              class="anchor"
+              href="#how-it-works"
+              aria-label="Link to How it works"
+              >#</a
+            >
+          </h2>
+          <ol>
+            <li>
+              <strong>The CLI</strong> walks the build directory, matches files
+              against the <code>criticalAssets</code> / <code>lazyLoadAssets</code>
+              patterns and writes the resulting pathnames — prefixed with
+              <code>deploymentPath</code> — into <code>critical-assets.json</code>
+              and into the generated worker. It also stamps
+              <code>build-timestamp.txt</code> and injects the
+              <a href="#bootstrap">bootstrap script</a> into <code>index.html</code>.
+            </li>
+            <li>
+              <strong>The worker</strong> serves SPA routes network-first from a
+              dedicated index cache, assets cache-first, and
+              <code>dataGroups</code> URLs cache-first into named caches. It also
+              understands a diagnostic header: a request carrying
+              <code>X-Cache-Only: true</code> is answered from the cache or failed
+              — never sent to the network.
+            </li>
+            <li>
+              <strong>The tracker</strong> uses that header to ask, asset by
+              asset, "is this cached yet?". Whatever is missing gets fetched
+              (which makes the worker cache it), re-checked on an interval,
+              paused while offline, resumed on reconnect — until everything
+              critical is confirmed. Lazy assets do the same in the background.
+            </li>
+          </ol>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="offline-json">
+          <p class="eyebrow">Build time</p>
+          <h2>
+            offline.json<a
+              class="anchor"
+              href="#offline-json"
+              aria-label="Link to offline.json"
+              >#</a
+            >
+          </h2>
+          <p>
+            Lives wherever you point <code>--config</code> at (default: the
+            directory you run the CLI from). Every path is resolved relative to
+            the config file's directory — a leading <code>/</code> is a
+            convention, not a filesystem root.
+          </p>
+
+          <h3 id="config-reference">
+            Every field<a class="anchor" href="#config-reference" aria-label="Link to Every field">#</a>
+          </h3>
+          <div class="opts">
+            <div class="opt">
+              <div class="opt-name">
+                buildPath<span class="opt-type">string · required</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  The built app's directory, e.g. <code>"/dist"</code>. Everything
+                  the CLI generates lands here.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                name<span class="opt-type">string · required</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  The app's name, shown at install time — <code>name</code> of the
+                  generated <a href="#manifest">manifest</a>.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                shortName<span class="opt-type">string · default: name</span>
+              </div>
+              <div class="opt-body">
+                <p><code>short_name</code> of the manifest — the homescreen label.</p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                themeColor<span class="opt-type">string · default "#ffffff"</span>
+              </div>
+              <div class="opt-body">
+                <p><code>theme_color</code> of the manifest.</p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                backgroundColor<span class="opt-type">string · default "#ffffff"</span>
+              </div>
+              <div class="opt-body">
+                <p><code>background_color</code> of the manifest.</p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                display<span class="opt-type">"standalone" | "fullscreen" | "minimal-ui" | "browser" · default "standalone"</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  How the installed app is displayed —
+                  <code>"standalone"</code> is its own window without browser UI
+                  (the PWA default), <code>"fullscreen"</code> hides even the
+                  status bar, <code>"minimal-ui"</code> keeps a minimal set of
+                  navigation controls, <code>"browser"</code> opens as a regular
+                  tab. Anything else fails validation.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                icons<span class="opt-type">{ src, sizes, type?, purpose? }[] · default []</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Manifest icons, passed through verbatim. <code>src</code> is
+                  resolved by the browser relative to the manifest file —
+                  deployment-agnostic relative paths like
+                  <code>"icons/icon-192x192.png"</code> just work.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                deploymentPath<span class="opt-type">string · default ""</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  The path prefix the app is deployed under, e.g.
+                  <code>"/client"</code> when the app is served from
+                  <code>https://host/client/</code>. It is baked into every
+                  generated pathname, into the worker's route matching and into
+                  the <code>window.__OFFLINE_CONFIG__</code> global the runtime
+                  reads. Leave it out for root deployments.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                index<span class="opt-type">string · default "/index.html"</span>
+              </div>
+              <div class="opt-body">
+                <p>The built HTML entry inside <code>buildPath</code>.</p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                spaRoutesPaths<span class="opt-type">string[] · default ["page"]</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Pathname prefixes of your SPA routes. Requests under any of
+                  them (plus the deployment root and the index itself) are
+                  served with the cached <code>index.html</code>, network-first.
+                  An empty prefix would turn <em>every</em> request into a SPA
+                  route — hence the non-empty default.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                authHeaderPath<span class="opt-type">string · default "Authorization"</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  The request header the worker forwards when fetching on behalf
+                  of the page — set it when your assets sit behind a custom auth
+                  header.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                criticalAssets<span class="opt-type">string[] · default []</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Patterns of files the app cannot work offline without —
+                  Angular-PWA-style globs. <code>**</code> matches across path
+                  segments (<code>"**.js"</code> — every JS file at any depth),
+                  <code>*</code> within one segment
+                  (<code>"/images/*.png"</code>, <code>"*-test-*/**.js"</code>),
+                  <code>?</code> exactly one character
+                  (<code>"/icon-??.png"</code>), and a <code>!</code> prefix
+                  excludes — a file must match at least one plain pattern and
+                  no <code>!</code> pattern
+                  (<code>["**.js", "!**.spec.js"]</code>). Anything else is an
+                  exact path. The matched files become
+                  <code>critical-assets.json</code> — the list
+                  <code>OfflineTracker</code> verifies.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                lazyLoadAssets<span class="opt-type">string[] · default []</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Same pattern language, lower urgency: cached by the worker and
+                  loaded by the tracker in the background, without blocking
+                  critical readiness. A file matched by both lists counts as
+                  critical.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                dataGroups<span class="opt-type">{ name, urls?, patterns?, maxSize? }[] · default []</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Named runtime caches for data the build does not contain —
+                  themes, fonts, translations, models. Matched by
+                  <code>urls</code> prefixes and/or <code>patterns</code>
+                  globs. E.g.
+                  <code>[{ "name": "translations", "urls": ["/translations/"], "maxSize": 1 }]</code>
+                  serves everything under <code>/translations/</code>
+                  cache-first from its own capped cache. Every field —
+                  <a href="#data-groups">dataGroups</a>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <h3 id="data-groups">
+            dataGroups<a class="anchor" href="#data-groups" aria-label="Link to dataGroups">#</a>
+          </h3>
+          <p>
+            Named runtime caches for data the build does not contain — themes,
+            fonts, translations, models. A request belongs to a group — and is
+            served cache-first from <code>data-group-&lt;name&gt;</code> — when
+            its pathname starts with <em>any</em> of the group's
+            <code>urls</code> prefixes <strong>or</strong> matches <em>any</em>
+            of its <code>patterns</code>.
+          </p>
+          <div class="opts">
+            <div class="opt">
+              <div class="opt-name">
+                name<span class="opt-type">string · required</span>
+              </div>
+              <div class="opt-body">
+                <p>Cache name suffix; must be unique across groups.</p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                urls<span class="opt-type">string[] · at least one of urls / patterns</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Pathname prefixes, e.g. <code>["/translations/"]</code>. The CLI
+                  prefixes them with <code>deploymentPath</code> at generation
+                  time, so write them deployment-agnostic.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                patterns<span class="opt-type">string[] · at least one of urls / patterns</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Glob patterns matched against the request pathname — the
+                  <em>same language</em> as
+                  <a href="#config-reference"><code>criticalAssets</code></a>:
+                  <code>**</code> across segments, <code>*</code> within one,
+                  <code>?</code> a single character, anything else an exact
+                  path. Compiled at build time (by the same matcher) and, like
+                  <code>urls</code>, made deployment-aware automatically —
+                  write them deployment-agnostic. A group may combine
+                  <code>urls</code> and <code>patterns</code>; either list may
+                  be omitted as long as the other is non-empty.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                maxSize<span class="opt-type">number · optional</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Cap on entries in the group's cache; the oldest entry is evicted
+                  first. Useful for versioned resources where only the current one
+                  matters — <code>maxSize: 1</code> keeps exactly the latest.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">json</span></div>
+            <pre><code data-lang="json">"dataGroups": [
+  { "name": "translations", "urls": ["/translations/"], "maxSize": 1 },
+  { "name": "images", "patterns": ["**.webp", "**.avif"] },
+  { "name": "themes", "urls": ["/themes/"], "patterns": ["**/skins/**.css"] }
+]</code></pre>
+          </div>
+
+          <h3 id="manifest">
+            The generated manifest<a class="anchor" href="#manifest" aria-label="Link to The generated manifest">#</a>
+          </h3>
+          <p>
+            Every run generates <code>manifest.webmanifest</code> in the build
+            directory — built from the flat fields above (<code>name</code>,
+            <code>shortName</code>, <code>themeColor</code>,
+            <code>backgroundColor</code>, <code>display</code>,
+            <code>icons</code>) — and adds
+            <code>&lt;link rel="manifest"&gt;</code> to the injected head block,
+            making the app installable with zero extra steps. camelCase config
+            keys map to the spec's snake_case on output.
+          </p>
+          <div class="note">
+            <span class="note-label">scope and start_url are not options</span>
+            <p>
+              Both derive from <code>deploymentPath</code> —
+              <code>"/client"</code> becomes
+              <code>"scope": "/client/"</code> and
+              <code>"start_url": "/client/"</code> (root deployments get
+              <code>"/"</code>). One source of truth for the worker, the
+              tracker, the bootstrap and the manifest.
+            </p>
+          </div>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">json</span></div>
+            <pre><code data-lang="json">// offline.json (manifest-related fields)
+{
+  "name": "Client",
+  "deploymentPath": "/client",
+  "buildPath": "/dist",
+  "themeColor": "#1c1c1c",
+  "icons": [
+    {
+      "src": "core-assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "core-assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}
+
+// → dist/manifest.webmanifest
+{
+  "name": "Client",
+  "short_name": "Client",
+  "theme_color": "#1c1c1c",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/client/",
+  "start_url": "/client/",
+  "icons": [ ... ]
+}</code></pre>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="cli">
+          <h2>
+            The CLI<a class="anchor" href="#cli" aria-label="Link to The CLI">#</a>
+          </h2>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">sh</span></div>
+            <pre><code data-lang="sh">offline-postbuild                # reads ./offline.json
+offline-postbuild --config ./config/offline.json</code></pre>
+          </div>
+          <p>Inside <code>buildPath</code>, in order:</p>
+          <ol>
+            <li><code>build-timestamp.txt</code> — the build's <code>Date.now()</code>, the new-version detector;</li>
+            <li>collects assets by the config patterns (its own outputs are excluded, so re-runs never precache a stale worker);</li>
+            <li><code>critical-assets.json</code> — the deployment-prefixed critical list;</li>
+            <li><code>manifest.webmanifest</code> — the <a href="#manifest">web app manifest</a>, with <code>scope</code>/<code>start_url</code> derived from <code>deploymentPath</code>;</li>
+            <li><code>sw-min.js</code> — the worker, generated from the template with your config baked in and minified in memory (no intermediate <code>sw.js</code> ever touches the disk);</li>
+            <li>injects the <a href="#bootstrap">bootstrap script</a> and the manifest <code>&lt;link&gt;</code> as the first thing inside <code>&lt;head&gt;</code> of the built index.</li>
+          </ol>
+          <div class="note">
+            <span class="note-label">Idempotent</span>
+            <p>
+              The injected block is fenced with marker comments; a re-run replaces
+              it instead of stacking a second copy. Running the CLI twice produces
+              byte-identical HTML.
+            </p>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="service-worker">
+          <h2>
+            The service worker<a
+              class="anchor"
+              href="#service-worker"
+              aria-label="Link to The service worker"
+              >#</a
+            >
+          </h2>
+          <p>The generated <code>sw-min.js</code> routes every fetch by four rules, first match wins:</p>
+          <div class="opts">
+            <div class="opt">
+              <div class="opt-name">
+                X-Cache-Only requests<span class="opt-type">cache or failure</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  A request carrying <code>X-Cache-Only: true</code> is answered
+                  from the matching cache, or failed without touching the network.
+                  This is the tracker's probe: a failed probe means "not cached
+                  yet", never "server said no".
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                SPA routes<span class="opt-type">network-first</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  The deployment root, the index pathname and everything under
+                  any <code>spaRoutesPaths</code> prefix are served with
+                  <code>index.html</code> — fresh from the network when possible,
+                  from the index cache when not.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                Assets<span class="opt-type">cache-first</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Every pathname in the generated critical + lazy lists. Cached on
+                  first successful fetch, then served from the cache forever —
+                  a new build's <a href="#bootstrap">timestamp check</a> resets it.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                dataGroups<span class="opt-type">cache-first, capped</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Matched by url prefixes and/or glob <code>patterns</code>
+                  into <code>data-group-&lt;name&gt;</code> caches, with
+                  <code>maxSize</code> eviction where configured.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <span class="note-label">Exact-pathname matching</span>
+            <p>
+              Asset matching compares <code>url.pathname</code> against the
+              generated lists verbatim. Query strings are ignored by the browser's
+              pathname, but a <code>mapAssetUrl</code> that rewrites the
+              <em>pathname</em> would make the tracker request URLs the worker
+              does not recognize as assets — keep mapped pathnames identical to
+              the built files.
+            </p>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="bootstrap">
+          <h2>
+            The bootstrap script<a
+              class="anchor"
+              href="#bootstrap"
+              aria-label="Link to The bootstrap script"
+              >#</a
+            >
+          </h2>
+          <p>
+            Injected by the CLI as the first script in <code>&lt;head&gt;</code>,
+            in plain pre-ES2015 JS, so it runs before any bundle on any browser.
+            Four jobs:
+          </p>
+          <ol>
+            <li>
+              <strong>Publish the build config.</strong>
+              <code>window.__OFFLINE_CONFIG__ = { deploymentPath }</code> — the
+              convention that lets
+              <a href="#api-register"><code>registerServiceWorker()</code></a> work
+              with no arguments, at any moment, in any order.
+            </li>
+            <li>
+              <strong>Fix the worker scope.</strong> A visit to
+              <code>/app</code> (no trailing slash) is redirected to
+              <code>/app/</code> — a worker registered at
+              <code>/app/sw-min.js</code> does not control the slashless URL.
+            </li>
+            <li>
+              <strong>Recover from chunk errors.</strong> A
+              <code>ChunkLoadError</code> means a lazy chunk was requested that
+              is neither cached nor reachable — the page reloads once, as soon as
+              the connection returns.
+            </li>
+            <li>
+              <strong>Detect new builds.</strong>
+              <code>build-timestamp.txt</code> is fetched cache-bypassing and
+              compared with the remembered one; a mismatch clears every cache so
+              the worker re-caches the new version.
+            </li>
+          </ol>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="tracker">
+          <p class="eyebrow">Runtime</p>
+          <h2>
+            OfflineTracker<a
+              class="anchor"
+              href="#tracker"
+              aria-label="Link to OfflineTracker"
+              >#</a
+            >
+          </h2>
+          <p>
+            A class used purely through its static members — the constructor is
+            private and throws. There is exactly one offline state per app, and
+            the type system (plus a runtime guard) makes an accidental second one
+            impossible.
+          </p>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">class OfflineTracker {
+  static init(options?: OfflineTrackerOptions): void;
+  static reInit(options?: OfflineTrackerReInitOptions): void;
+  static registerServiceWorker(): void;
+  static get status(): OfflineStatus;
+  static get isOfflineReady(): boolean;
+  static subscribe(listener: (isOfflineReady: boolean) =&gt; void): OfflineTrackerUnsubscribe;
+  static whenOfflineReady(): Promise&lt;void&gt;;
+  static stabilizeCaching(): Promise&lt;void&gt;;
+  static destroy(): void;
+}</code></pre>
+          </div>
+          <div class="note">
+            <span class="note-label">Fail-fast contract</span>
+            <p>
+              Every stateful member throws before <code>init()</code> — a default
+              value would be a plausible-looking lie about the cache. The two
+              exceptions: <code>registerServiceWorker()</code> is deliberately
+              independent, and <code>destroy()</code> is a safe no-op.
+            </p>
+          </div>
+
+          <h3 id="api-init">
+            init(options?)<a class="anchor" href="#api-init" aria-label="Link to init">#</a>
+          </h3>
+          <p>
+            Synchronous, returns nothing — it kicks the whole process off and
+            the async work runs in the background. The first call verifies the
+            <code>NetworkConnection</code> precondition (throws synchronously
+            when missing), wires the <code>controllerchange</code> re-track and
+            the reconnect auto-stabilization, fetches
+            <code>critical-assets.json</code> through a client-side
+            cache-first bucket
+            (<code>@dmytromykhailiuk/cache-request</code>, bucket
+            <code>offline-critical-assets</code>): the cached copy is served
+            when present — no network round-trip per session — and a miss goes
+            to the network, HTTP-cache-bypassing, caching the ok response. The
+            bucket is invalidated by the <a href="#bootstrap">bootstrap</a>'s
+            new-build cache wipe, so a fresh build means a fresh list. With no
+            cached copy the fetch is retried until an <em>ok</em> response
+            arrives (the CLI always generates the file, so a 404/5xx is
+            transient deploy state; offline stretches are waited out via
+            <code>NetworkConnection.continueWhenOnline()</code>) — and starts
+            tracking: probe everything with
+            <code>X-Cache-Only</code>, fetch what's missing (the worker caches
+            it), re-probe on <code>retryDelay</code>, park while offline,
+            resume on reconnect. Critical assets gate readiness directly;
+            <code>additionalLazyLoadAssets</code> load in the background and
+            flip <a href="#api-status"><code>isOfflineReady</code></a> when
+            done.
+          </p>
+          <p>
+            Callable <strong>once</strong> — the configuration it resolves is
+            final, and a second call throws. Restart tracking with
+            <a href="#api-reinit"><code>reInit()</code></a>; reconfigure via
+            <code>destroy()</code> + <code>init()</code>.
+          </p>
+          <div class="opts">
+            <div class="opt">
+              <div class="opt-name">
+                disabled<span class="opt-type">boolean · default false</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Turns the whole tracker into an inert no-op — for dev
+                  environments, where the offline layer does not exist. Pass
+                  your dev flag, e.g.
+                  <code>disabled: import.meta.env.DEV</code>. While disabled
+                  nothing runs — no requests, no listeners,
+                  <code>registerServiceWorker()</code> skips registration,
+                  <code>stabilizeCaching()</code> resolves without doing
+                  anything, <code>reInit()</code> calls stay no-ops — and
+                  <code>isOfflineReady</code> stays <code>false</code>. The
+                  <code>NetworkConnection</code> precondition is skipped too.
+                  Use <code>destroy()</code> to leave it.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                modifyRequestHeaders<span class="opt-type">(headers: Headers) =&gt; Headers · default identity</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Called before <em>every</em> request the tracker makes — the
+                  list, the cache probes, the warming loads — with a
+                  <code>Headers</code> instance holding what is about to be
+                  sent; returns the <code>Headers</code> to actually send
+                  (mutating and returning the same instance is fine). Attach an
+                  auth token here — the headers analog of
+                  <code>mapAssetUrl</code>; see <a href="#recipes">Recipes</a>.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                mapAssetUrl<span class="opt-type">(url: string) =&gt; string · default identity</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Transforms every asset URL (built list + additional) before it
+                  is requested — e.g. substituting the current theme or
+                  translation version into a templated path.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                shouldStabilize<span class="opt-type">() =&gt; boolean · default () =&gt; true</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Consulted before an automatic
+                  <a href="#api-stabilize"><code>stabilizeCaching()</code></a> run
+                  after a reconnect. Return <code>false</code> to skip it — say,
+                  while the user is mid-upload.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                swSettleDelay<span class="opt-type">number · default 1000</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Milliseconds to wait after <code>serviceWorker.ready</code>
+                  before loading, giving a fresh worker time to take over the
+                  page.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                retryDelay<span class="opt-type">number · default 2500</span>
+              </div>
+              <div class="opt-body">
+                <p>Milliseconds between load-and-recheck rounds.</p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                reconnectSettleDelay<span class="opt-type">number · default 250</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Milliseconds to wait after the connection returns before a
+                  paused loop resumes.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                additionalCriticalAssets<span class="opt-type">string[] · default []</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Extra assets that must be cached — on top of
+                  <code>critical-assets.json</code> — before the app counts as
+                  ready. Later <code>reInit()</code> calls merge into this
+                  list: every cycle tracks the accumulated, deduplicated union.
+                </p>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-name">
+                additionalLazyLoadAssets<span class="opt-type">string[] · default []</span>
+              </div>
+              <div class="opt-body">
+                <p>
+                  Extra assets loaded in the background. They gate
+                  <code>isOfflineReady</code> but load without blocking the
+                  critical set. Merged across <code>reInit()</code> calls, like
+                  the critical ones.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <h3 id="api-reinit">
+            reInit(options?)<a class="anchor" href="#api-reinit" aria-label="Link to reInit">#</a>
+          </h3>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">// The flow-manager table arrived and brought its own assets:
+OfflineTracker.reInit({
+  additionalCriticalAssets: table.additionalAssetsToLoad,
+  additionalLazyLoadAssets: table.additionalLazyLoadAssets,
+});</code></pre>
+          </div>
+          <p>
+            Restart tracking with more assets — the only two options it takes
+            are <code>additionalCriticalAssets</code> and
+            <code>additionalLazyLoadAssets</code>; the configuration (hooks,
+            delays, <code>disabled</code>) belongs to <code>init()</code> and
+            cannot change here. Synchronous, returns nothing, callable any
+            number of times. Throws before <code>init()</code>; a no-op while
+            initialized with <code>disabled: true</code>.
+          </p>
+          <ul>
+            <li>
+              <strong>Merging:</strong> the passed lists join the deduplicated
+              union of everything given to <code>init()</code> and earlier
+              <code>reInit()</code> calls — a later caller can never drop what
+              an earlier one declared critical. The union always sits on top of
+              <code>critical-assets.json</code>, which is <em>not</em>
+              refetched.
+            </li>
+            <li>
+              <strong>Superseding:</strong> the previous cycle stops silently;
+              readiness resets and is re-verified from scratch.
+            </li>
+            <li>
+              <strong>controllerchange:</strong> a new worker taking over
+              re-runs tracking with the accumulated union automatically — a new
+              worker means a new, empty cache.
+            </li>
+          </ul>
+
+          <h3 id="api-register">
+            registerServiceWorker()<a class="anchor" href="#api-register" aria-label="Link to registerServiceWorker">#</a>
+          </h3>
+          <p>
+            Registers <code>origin + deploymentPath + "/sw-min.js"</code> with
+            <code>updateViaCache: "none"</code>, the deployment path taken from
+            the CLI-injected <code>window.__OFFLINE_CONFIG__</code> — the single
+            source of truth. Synchronous, returns nothing — like
+            <code>init()</code>, it kicks the registration off and the browser
+            does the rest in the background. No parameters, independent of
+            <code>init()</code> — call it at any moment, in either order. A
+            silent no-op where service workers do not exist (SSR, dev without
+            the postbuild, unsupported browsers). When
+            <code>NetworkConnection</code> is initialized, the registration
+            survives connection drops via
+            <code>restartIfNotFinishedWhenOnline</code>; a registration that
+            genuinely fails is reported to the console — there is no meaningful
+            recovery the caller could do.
+          </p>
+
+          <h3 id="api-status">
+            status &amp; isOfflineReady<a class="anchor" href="#api-status" aria-label="Link to status">#</a>
+          </h3>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">OfflineTracker.status;
+// { criticalAssetsLoaded: boolean, lazyAssetsLoaded: boolean, allAssetsLoaded: boolean }
+
+OfflineTracker.isOfflineReady; // shortcut for status.allAssetsLoaded</code></pre>
+          </div>
+          <p>
+            <code>status</code> returns a fresh snapshot object on every read;
+            <code>isOfflineReady</code> is the single boolean the app usually
+            cares about. Both throw before <code>init()</code>.
+          </p>
+
+          <h3 id="api-subscribe">
+            subscribe(listener)<a class="anchor" href="#api-subscribe" aria-label="Link to subscribe">#</a>
+          </h3>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">const unsubscribe = OfflineTracker.subscribe((isOfflineReady) =&gt; {
+  banner.hidden = isOfflineReady;
+});
+unsubscribe(); // detach; calling it again is a no-op</code></pre>
+          </div>
+          <p>
+            Fires on every <em>change</em> of <code>isOfflineReady</code> — in
+            both directions (re-initializing against a wiped cache drops readiness
+            first). The listener is not called on subscription: the current value
+            is already available synchronously. A throwing listener is contained
+            and reported; subscribing or unsubscribing from inside a listener is
+            safe; <code>destroy()</code> drops every subscription without a final
+            call.
+          </p>
+
+          <h3 id="api-when-ready">
+            whenOfflineReady()<a class="anchor" href="#api-when-ready" aria-label="Link to whenOfflineReady">#</a>
+          </h3>
+          <p>
+            Resolves immediately when ready, otherwise on the next transition to
+            ready. <code>destroy()</code> rejects pending waiters — leaving them
+            hanging would deadlock the code awaiting them.
+          </p>
+
+          <h3 id="api-stabilize">
+            stabilizeCaching()<a class="anchor" href="#api-stabilize" aria-label="Link to stabilizeCaching">#</a>
+          </h3>
+          <p>
+            The repair path. Without a controlling, active worker the cache state
+            is untrustworthy — every cache is deleted and the page reloads to
+            start clean. With a healthy worker, the still-missing assets get one
+            load-and-recheck round, flipping readiness if that closed the gap.
+          </p>
+          <p>
+            It runs <strong>automatically</strong> after the connection comes
+            back while the app is not ready (gated by
+            <code>shouldStabilize</code>), and it can be called manually at any
+            time. Before the first tracking cycle populates the missing-asset sets it is a deliberate no-op
+            — an empty "missing" set proves nothing.
+          </p>
+
+          <h3 id="api-destroy">
+            destroy()<a class="anchor" href="#api-destroy" aria-label="Link to destroy">#</a>
+          </h3>
+          <p>
+            Undo <code>init()</code>: stop every loop, detach the
+            <code>controllerchange</code> and network listeners, drop
+            subscriptions without a final call, reject pending
+            <code>whenOfflineReady()</code> waiters, reset all state. A no-op
+            when not initialized. Built for tests and HMR teardown — production
+            apps normally never call it.
+          </p>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="recipes">
+          <h2>
+            Recipes<a class="anchor" href="#recipes" aria-label="Link to Recipes">#</a>
+          </h2>
+
+          <h3 id="recipe-auth">
+            Auth-protected assets<a class="anchor" href="#recipe-auth" aria-label="Link to Auth-protected assets">#</a>
+          </h3>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">OfflineTracker.init({
+  modifyRequestHeaders: (headers) =&gt; {
+    headers.set("Authorization", getToken());
+    return headers;
+  },
+});</code></pre>
+          </div>
+          <p>
+            The worker forwards the header named by <code>authHeaderPath</code> in
+            <code>offline.json</code> when it fetches on the page's behalf.
+          </p>
+
+          <h3 id="recipe-versioned">
+            Versioned asset paths<a class="anchor" href="#recipe-versioned" aria-label="Link to Versioned asset paths">#</a>
+          </h3>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">OfflineTracker.init({
+  mapAssetUrl: (url) =&gt;
+    url
+      .replace("{theme}", currentTheme())
+      .replace("{lang}", currentLanguage()),
+});</code></pre>
+          </div>
+
+          <h3 id="recipe-routes">
+            Route-scoped stabilization<a class="anchor" href="#recipe-routes" aria-label="Link to Route-scoped stabilization">#</a>
+          </h3>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">OfflineTracker.init({
+  shouldStabilize: () =&gt;
+    !location.pathname.includes("/upload") &amp;&amp;
+    !location.pathname.includes("/completed"),
+});</code></pre>
+          </div>
+
+          <h3 id="recipe-data">
+            Assets that arrive with data<a class="anchor" href="#recipe-data" aria-label="Link to Assets that arrive with data">#</a>
+          </h3>
+          <div class="snippet">
+            <div class="snippet-head"><span class="snippet-lang">ts</span></div>
+            <pre><code data-lang="ts">// Call reInit() whenever the server tells you what else matters —
+// the new assets merge into the tracked union, tracking restarts,
+// the list is not refetched.
+onTableLoaded((table) =&gt; {
+  OfflineTracker.reInit({
+    additionalCriticalAssets: table.additionalAssetsToLoad ?? [],
+    additionalLazyLoadAssets: table.additionalLazyLoadAssets ?? [],
+  });
+});</code></pre>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <section id="typescript">
+          <h2>
+            TypeScript<a class="anchor" href="#typescript" aria-label="Link to TypeScript">#</a>
+          </h2>
+          <p>
+            Everything is typed; the package ships ESM + CJS with
+            <code>.d.ts</code> for both. Exported types:
+            <code>OfflineTrackerOptions</code> ·
+            <code>OfflineTrackerReInitOptions</code> ·
+            <code>OfflineStatus</code> · <code>OfflineTrackerListener</code> ·
+            <code>OfflineTrackerUnsubscribe</code> ·
+            <code>OfflineGlobalConfig</code> · <code>OfflineConfig</code> ·
+            <code>OfflineDataGroup</code> · <code>OfflineManifestDisplay</code> ·
+            <code>OfflineManifestIcon</code>.
+          </p>
+          <p>
+            <code>OfflineConfig</code> / <code>OfflineDataGroup</code> describe
+            <code>offline.json</code> — handy for generating the config from
+            typed build scripts. The <code>window.__OFFLINE_CONFIG__</code>
+            global is declared on <code>Window</code>, so reading it in app code
+            type-checks out of the box.
+          </p>
+        </section>
+
+        <footer>
+          <p>
+            MIT ·
+            <a href="https://github.com/dmytromykhailiuk/offline"
+              >github.com/dmytromykhailiuk/offline</a
+            >
+            · Run the live playground with <code>npm run playground</code>.
+          </p>
+        </footer>
+      </main>
+    </div>
+    <script>
+      (function () {
+        "use strict";
+
+        // Everything here is progressive enhancement: the page is fully readable
+        // without it. Each part is isolated so one failure cannot take the rest down.
+        function attempt(fn) {
+          try {
+            fn();
+          } catch (err) {
+            if (window.console) console.warn("[docs]", err);
+          }
+        }
+
+        /* ── theme toggle ─────────────────────────────────────────────── */
+        attempt(function () {
+          var root = document.documentElement;
+          var toggle = document.getElementById("theme-toggle");
+          if (!toggle) return;
+
+          function prefersDark() {
+            // matchMedia is missing in some embedded/older engines — treating that
+            // as "light" is harmless, throwing here would kill the whole script.
+            return (
+              typeof window.matchMedia === "function" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches
+            );
+          }
+          function currentTheme() {
+            return (
+              root.getAttribute("data-theme") ||
+              (prefersDark() ? "dark" : "light")
+            );
+          }
+          function label() {
+            toggle.setAttribute(
+              "aria-label",
+              currentTheme() === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme"
+            );
+          }
+          toggle.addEventListener("click", function () {
+            root.setAttribute(
+              "data-theme",
+              currentTheme() === "dark" ? "light" : "dark"
+            );
+            label();
+          });
+          label();
+        });
+
+        /* ── mobile navigation drawer ─────────────────────────────────── */
+        attempt(function () {
+          var body = document.body;
+          var toggle = document.getElementById("nav-toggle");
+          var scrim = document.getElementById("nav-scrim");
+          var rail = document.getElementById("site-rail");
+          if (!toggle || !rail) return;
+
+          function setOpen(open) {
+            body.classList.toggle("nav-open", open);
+            toggle.setAttribute("aria-expanded", open ? "true" : "false");
+            toggle.setAttribute(
+              "aria-label",
+              open ? "Close navigation" : "Open navigation"
+            );
+          }
+          toggle.addEventListener("click", function () {
+            setOpen(!body.classList.contains("nav-open"));
+          });
+          if (scrim) {
+            scrim.addEventListener("click", function () {
+              setOpen(false);
+            });
+          }
+          // picking a destination closes the drawer
+          Array.prototype.forEach.call(
+            rail.querySelectorAll("nav.toc a"),
+            function (link) {
+              link.addEventListener("click", function () {
+                setOpen(false);
+              });
+            }
+          );
+          document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") setOpen(false);
+          });
+        });
+
+        /* ── syntax highlighting ──────────────────────────────────────── */
+        var KEYWORDS = new Set([
+          "const",
+          "let",
+          "var",
+          "function",
+          "return",
+          "import",
+          "export",
+          "from",
+          "type",
+          "interface",
+          "extends",
+          "implements",
+          "new",
+          "class",
+          "if",
+          "else",
+          "for",
+          "of",
+          "in",
+          "await",
+          "async",
+          "true",
+          "false",
+          "null",
+          "undefined",
+          "as",
+          "typeof",
+          "default",
+          "this",
+          "void",
+        ]);
+        var PATTERN =
+          /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)/g;
+
+        function esc(s) {
+          return s
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+
+        function highlight(code, isJson) {
+          var out = "",
+            last = 0,
+            m;
+          PATTERN.lastIndex = 0;
+          while ((m = PATTERN.exec(code)) !== null) {
+            out += esc(code.slice(last, m.index));
+            if (m[1]) {
+              out += '<span class="tok-com">' + esc(m[1]) + "</span>";
+            } else if (m[2]) {
+              // In JSON, a string immediately followed by ':' is a key.
+              var after = code.slice(PATTERN.lastIndex);
+              var isKey = isJson && /^\s*:/.test(after);
+              out +=
+                '<span class="' +
+                (isKey ? "tok-key" : "tok-str") +
+                '">' +
+                esc(m[2]) +
+                "</span>";
+            } else if (m[3]) {
+              out += '<span class="tok-num">' + esc(m[3]) + "</span>";
+            } else if (m[4] && KEYWORDS.has(m[4])) {
+              out += '<span class="tok-kw">' + esc(m[4]) + "</span>";
+            } else {
+              out += esc(m[0]);
+            }
+            last = PATTERN.lastIndex;
+          }
+          return out + esc(code.slice(last));
+        }
+
+        attempt(function () {
+          Array.prototype.forEach.call(
+            document.querySelectorAll("code[data-lang]"),
+            function (block) {
+              var lang = block.getAttribute("data-lang");
+              if (lang === "sh") return;
+              block.innerHTML = highlight(block.textContent, lang === "json");
+            }
+          );
+        });
+
+        /* ── table-of-contents scroll spy ─────────────────────────────── */
+        attempt(function () {
+          if (!("IntersectionObserver" in window)) return;
+
+          var byId = {};
+          var targets = [];
+          Array.prototype.forEach.call(
+            document.querySelectorAll("nav.toc a"),
+            function (link) {
+              var id = link.getAttribute("href").slice(1);
+              var el = document.getElementById(id);
+              if (!el) return;
+              byId[id] = link;
+              targets.push(el);
+            }
+          );
+          if (!targets.length) return;
+
+          var active = null;
+          function setActive(id) {
+            if (id === active) return;
+            if (active && byId[active])
+              byId[active].classList.remove("is-active");
+            active = id;
+            if (byId[id]) byId[id].classList.add("is-active");
+          }
+
+          var visible = {};
+          var observer = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                visible[entry.target.id] = entry.isIntersecting;
+              });
+              // Highlight the first section, in document order, that is on screen.
+              for (var i = 0; i < targets.length; i++) {
+                if (visible[targets[i].id]) {
+                  setActive(targets[i].id);
+                  return;
+                }
+              }
+            },
+            { rootMargin: "0px 0px -70% 0px", threshold: 0 }
+          );
+          targets.forEach(function (el) {
+            observer.observe(el);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

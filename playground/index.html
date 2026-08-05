@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>offline — playground</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235B4BD6'/%3E%3Cpath d='M16 6v11M10.5 12.5 16 18l5.5-5.5' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 24h14' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --ground: #fbfbfd;
+        --surface: #ffffff;
+        --surface-2: #f3f4f8;
+        --ink: #14161c;
+        --ink-2: #3a3f4c;
+        --muted: #6b7181;
+        --line: #e3e5ec;
+        --accent: #5b4bd6;
+        --accent-soft: #efecfd;
+        --warn: #8a5200;
+        --warn-soft: #fcf3e5;
+        --ok: #0e7c7b;
+        --shadow: 0 1px 2px rgba(20, 22, 28, 0.05), 0 8px 24px -12px rgba(20, 22, 28, 0.14);
+      }
+      :root[data-theme="dark"] {
+        --ground: #0e1014;
+        --surface: #14171d;
+        --surface-2: #191d25;
+        --ink: #e9ebf1;
+        --ink-2: #c3c9d6;
+        --muted: #8b93a6;
+        --line: #262b35;
+        --accent: #a99bff;
+        --accent-soft: #1e1b33;
+        --warn: #e2a85c;
+        --warn-soft: #241c10;
+        --ok: #4fd1c5;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 62rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+      h1 {
+        font: 600 1.35rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: var(--accent);
+        margin: 0 0 0.25rem;
+      }
+      .sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 1.5rem; }
+      .hint {
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--warn);
+        background: var(--warn-soft);
+        color: var(--ink-2);
+        border-radius: 0.5rem;
+        padding: 0.7rem 1rem;
+        font-size: 0.88rem;
+        margin: 0 0 1.5rem;
+      }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 0.7rem;
+        box-shadow: var(--shadow);
+        padding: 1rem 1.1rem;
+      }
+      .card h2 {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+        font: 600 0.85rem/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+        margin: 0 0 0.6rem;
+      }
+      .badge {
+        font: 500 0.66rem/1 ui-monospace, monospace;
+        padding: 0.22rem 0.45rem;
+        border-radius: 2rem;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .badge.on { color: var(--ok); border-color: currentColor; }
+      .badge.warn { color: var(--warn); border-color: currentColor; }
+      .value {
+        font: 0.82rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 0.45rem;
+        padding: 0.5rem 0.65rem;
+        margin: 0 0 0.7rem;
+        white-space: pre-wrap;
+        word-break: break-all;
+        min-height: 2.2rem;
+      }
+      .row { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+      button {
+        font: 500 0.82rem/1 system-ui, sans-serif;
+        color: var(--ink-2);
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 0.45rem;
+        padding: 0.45rem 0.7rem;
+        cursor: pointer;
+      }
+      button:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+      button.danger:hover { color: #b42318; border-color: #b42318; background: transparent; }
+      button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .full { grid-column: 1 / -1; }
+      .log {
+        font: 0.78rem/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 0.45rem;
+        padding: 0.6rem 0.75rem;
+        max-height: 14rem;
+        overflow-y: auto;
+        margin: 0;
+      }
+      .log div { border-bottom: 1px dashed var(--line); padding: 0.15rem 0; }
+      .log div:last-child { border-bottom: 0; }
+      .log .t { color: var(--muted); margin-right: 0.5rem; }
+      .log .k { color: var(--accent); margin-right: 0.5rem; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>offline / playground</h1>
+      <p class="sub">
+        The full <code>OfflineTracker</code> lifecycle, driven from buttons.
+      </p>
+      <p class="hint">
+        <strong>Simulated stack:</strong> the real service worker only exists in a real build
+        (<code>offline-postbuild</code>), so this page stubs <code>fetch</code> to reproduce its
+        protocol — a "server" you can deploy assets to, a "worker cache" that fills on load, and a
+        network you can cut. The tracker itself is the real library running unmodified.
+      </p>
+
+      <div class="grid">
+        <div class="card">
+          <h2>network <span class="badge" id="net-badge">…</span></h2>
+          <div class="value" id="net-value">NetworkConnection not initialized</div>
+          <div class="row">
+            <button id="net-offline" class="danger">cut network</button>
+            <button id="net-online">restore network</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>tracker <span class="badge" id="ready-badge">…</span></h2>
+          <div class="value" id="status-value">OfflineTracker not initialized</div>
+          <div class="row">
+            <button id="tracker-track">reInit()</button>
+            <button id="tracker-track-extra">reInit({ additional… })</button>
+            <button id="tracker-stabilize">stabilizeCaching()</button>
+            <button id="tracker-destroy" class="danger">destroy()</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>simulated server</h2>
+          <div class="value" id="server-value"></div>
+          <div class="row">
+            <button id="server-deploy">deploy assets to server</button>
+            <button id="server-undeploy" class="danger">drop assets from server</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>simulated worker cache</h2>
+          <div class="value" id="cache-value"></div>
+          <div class="row">
+            <button id="cache-wipe" class="danger">wipe cache</button>
+          </div>
+        </div>
+
+        <div class="card full">
+          <h2>log — subscribe(), promises, requests</h2>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

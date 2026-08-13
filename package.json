@@ -1,6 +1,6 @@
 {
   "name": "@dmytromykhailiuk/offline",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Full offline mode for SPAs: a post-build CLI that generates a service worker and precache manifest, plus a promise-based OfflineTracker that reports when the app is ready to work offline.",
   "type": "module",
   "sideEffects": false,
@@ -91,5 +91,5 @@
   "bugs": {
     "url": "https://github.com/dmytromykhailiuk/offline/issues"
   },
-  "homepage": "https://github.com/dmytromykhailiuk/offline#readme"
+  "homepage": "https://dmytromykhailiuk.github.io/offline/"
 }
